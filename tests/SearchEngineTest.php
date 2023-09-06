@@ -23,5 +23,6 @@ class SearchEngineTest extends TestCase
         $expected = ['doc1', 'doc2',];
 
         $this->assertEquals($expected, search($docs, 'shoot'));
+        $this->assertEquals($expected, search($docs, '"shoot!'));
     }
 }
