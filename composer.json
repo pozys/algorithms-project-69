@@ -1,0 +1,19 @@
+{
+    "name": "hexlet/code",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "files": [
+            "src/index.php"
+        ]
+    },
+    "authors": [
+        {
+            "name": "Культяпов Константин",
+            "email": "pozys@mail.ru"
+        }
+    ],
+    "require-dev": {
+        "phpunit/phpunit": "^10"
+    }
+}
