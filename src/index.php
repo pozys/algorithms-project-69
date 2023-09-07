@@ -4,18 +4,34 @@ namespace App;
 
 function search(array $docs, string $search): array
 {
-    $splitted = array_map(fn (array $doc) => [...$doc, ...['text' => str_word_count($doc['text'], 2)]], $docs);
+    $tokenized = array_map(fn (array $doc) => [
+        ...$doc, 'tokens' => tokenize($doc['text'])
+    ], $docs);
+
     $termes = array_map(fn (array $split) => [
         ...$split,
-        ...['text' => array_map(
+        'termes' => array_map(
             fn (string $word) => getTerm($word),
-            $split['text']
-        )]
-    ], $splitted);
+            $split['tokens']
+        )
+    ], $tokenized);
 
-    $filtered = array_filter($termes, fn (array $doc) => array_search(getTerm($search), $doc['text']) !== false);
+    $searched = array_map(
+        fn ($doc) => [
+            ...$doc,
+            'search' => array_filter($doc['termes'], fn (string $word) => $word === getTerm($search))
+        ],
+        $termes
+    );
 
-    return array_map(fn (array $doc) => $doc['id'], $filtered);
+    $filtered = array_filter(
+        $searched,
+        fn (array $doc) => count($doc['search']) > 0
+    );
+
+    $sorted = sortByRelevance($filtered);
+
+    return array_column($sorted, 'id');
 }
 
 function getTerm(string $token): string
@@ -24,4 +40,17 @@ function getTerm(string $token): string
     preg_match_all('/\w+/', $token, $matches);
 
     return $matches[0][0] ?? '';
+}
+
+function tokenize(string $text): array
+{
+    return str_word_count($text, 2);
+}
+
+function sortByRelevance(array $docs): array
+{
+    $counted = array_map(fn (array $doc) => [...$doc, 'count' => count($doc['search'])], $docs);
+    usort($counted, fn (array $doc1, array $doc2) => $doc1['count'] <=> $doc2['count']);
+
+    return array_reverse($counted);
 }
