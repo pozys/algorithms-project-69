@@ -16,10 +16,15 @@ function search(array $docs, string $search): array
         )
     ], $tokenized);
 
+    $tokenizedTermedSearch = array_map(
+        fn (string $word) => getTerm($word),
+        tokenize($search)
+    );
+
     $searched = array_map(
         fn ($doc) => [
             ...$doc,
-            'search' => array_filter($doc['termes'], fn (string $word) => $word === getTerm($search))
+            'search' => array_filter($doc['termes'], fn (string $word) => in_array($word, $tokenizedTermedSearch))
         ],
         $termes
     );
@@ -49,8 +54,19 @@ function tokenize(string $text): array
 
 function sortByRelevance(array $docs): array
 {
-    $counted = array_map(fn (array $doc) => [...$doc, 'count' => count($doc['search'])], $docs);
-    usort($counted, fn (array $doc1, array $doc2) => $doc1['count'] <=> $doc2['count']);
+    $counted = array_map(fn (array $doc) => [
+        ...$doc,
+        'count' => count($doc['search']),
+        'found_count' => count(array_unique($doc['search']))
+    ], $docs);
+
+    usort(
+        $counted,
+        fn (array $doc1, array $doc2) =>
+        $doc1['found_count'] === $doc2['found_count']
+            ? $doc1['count'] <=> $doc2['count']
+            : $doc1['found_count'] <=> $doc2['found_count']
+    );
 
     return array_reverse($counted);
 }
