@@ -10,9 +10,9 @@ function search(array $docs, string $search): array
 
     $found = searchForWords($data, $searchedWords);
 
-    return sortByRelevance($found);
-    // print_r($sorted);
-    // return array_column($sorted, 'id');
+    $sorted = sortByRelevance($found);
+
+    return array_keys($sorted);
 }
 
 function prepareData(array $docs): array
@@ -32,16 +32,56 @@ function prepareData(array $docs): array
     $invertedIndex = array_reduce($terms, function (array $accum, array $doc): array {
         foreach ($doc['terms'] as $term) {
             if (array_key_exists($term, $accum)) {
-                $accum[$term] = array_unique([...$accum[$term], $doc['id']]);
+                if (in_array($doc['id'], array_column($accum[$term], 'id'))) {
+                    continue;
+                }
+
+                $accum[$term] = [
+                    ...$accum[$term],
+                    [...$doc, 'id' => $doc['id'], 'tf' => getTermFrequency($doc['terms'], $term)]
+                ];
             } else {
-                $accum[$term] = [$doc['id']];
+                $accum[$term] = [
+                    [
+                        ...$doc,
+                        'id' => $doc['id'],
+                        'tf' => getTermFrequency($doc['terms'], $term),
+                    ]
+                ];
             }
         }
 
         return $accum;
     }, []);
 
-    return $invertedIndex;
+    $idf = array_map(
+        fn (array $docsWithWord): array => [
+            'docs' => $docsWithWord,
+            'idf' => count($docsWithWord) === 0 ? 0 : count($docs) / count($docsWithWord),
+        ],
+        $invertedIndex
+    );
+
+    $tfidf = array_map(
+        fn (array $docs): array => [
+            ...$docs,
+            'docs' => array_map(
+                fn (array $doc) => [...$doc, 'tfidf' => $doc['tf'] * $docs['idf']],
+                $docs['docs']
+            ),
+        ],
+        $idf
+    );
+
+    return $idf;
+}
+
+function getTermFrequency(array $terms, $word): float
+{
+    $occurrencesNumber = count(array_filter($terms, fn (string $term) => $term === $word));
+    $termsCount = count($terms);
+
+    return $termsCount === 0 ? 0 : $occurrencesNumber / $termsCount;
 }
 
 function prepareSearch(string $search): array
@@ -54,24 +94,11 @@ function prepareSearch(string $search): array
 
 function searchForWords(array $docs, array $words): array
 {
-    // $found = array_map(
-    //     fn ($doc) => [
-    //         ...$doc,
-    //         'found' => array_filter($doc['terms'], fn (string $word) => in_array($word, $words))
-    //     ],
-    //     $docs
-    // );
-
     return array_reduce(
         $words,
-        fn (array $accum, string $word) => array_unique([...$accum, ...$docs[$word]]),
+        fn (array $accum, string $word) => [...$accum, [...$docs[$word]]],
         []
     );
-
-    // return array_filter(
-    //     $found,
-    //     fn (array $doc) => count($doc['found']) > 0
-    // );
 }
 
 function getTerm(string $token): string
@@ -89,21 +116,33 @@ function tokenize(string $text): array
 
 function sortByRelevance(array $docs): array
 {
-    sort($docs);
-    return $docs;
-    // $counted = array_map(fn (array $doc) => [
-    //     ...$doc,
-    //     'count' => count($doc['found']),
-    //     'found_count' => count(array_unique($doc['found']))
-    // ], $docs);
+    $tfidf = array_map(
+        fn (array $extdoc) =>
+        array_reduce(
+            $extdoc['docs'],
+            fn (array $accum, array $doc) => [...$accum, ...[$doc['id'] => $extdoc['idf'] * $doc['tf']]],
+            []
+        ),
+        $docs
+    );
 
-    // usort(
-    //     $counted,
-    //     fn (array $doc1, array $doc2) =>
-    //     $doc1['found_count'] === $doc2['found_count']
-    //         ? $doc1['count'] <=> $doc2['count']
-    //         : $doc1['found_count'] <=> $doc2['found_count']
-    // );
+    $totaltfidf  = array_reduce(
+        $tfidf,
+        function (array $accum, array $docs) {
+            foreach ($docs as $id => $tfidf) {
+                if (array_key_exists($id, $accum)) {
+                    $accum[$id] += $tfidf;
+                } else {
+                    $accum[$id] = $tfidf;
+                }
+            }
 
-    // return array_reverse($counted);
+            return $accum;
+        },
+        []
+    );
+
+    arsort($totaltfidf);
+
+    return $totaltfidf;
 }

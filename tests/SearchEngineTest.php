@@ -25,25 +25,25 @@ class SearchEngineTest extends TestCase
 
     public function testSimpleSearch(): void
     {
-        $expected = ['doc1', 'doc2',];
+        $expected = ['doc2', 'doc1',];
 
         $this->assertEquals($expected, search($this->docs, 'shoot'));
     }
 
     public function testTermSearch(): void
     {
-        $expected = ['doc1', 'doc2',];
+        $expected = ['doc2', 'doc1',];
 
         $this->assertEquals($expected, search($this->docs, '"shoot!'));
     }
 
     public function testFuzzySearch(): void
     {
-        $expected = ['doc1', 'doc2',];
+        $expected = ['doc2', 'doc1',];
 
         $this->assertEquals($expected, search($this->docs, 'shoot at me'));
 
-        $expected = ['doc1', 'doc2', 'doc3',];
+        $expected = ['doc2', 'doc1', 'doc3',];
 
         $this->assertEquals($expected, search($this->docs, 'shoot I'));
     }
