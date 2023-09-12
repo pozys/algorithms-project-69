@@ -13,6 +13,9 @@
             "email": "pozys@mail.ru"
         }
     ],
+    "scripts": {
+    "test": "phpunit tests"
+  },
     "require-dev": {
         "phpunit/phpunit": "^10"
     }
