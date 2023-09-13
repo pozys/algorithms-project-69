@@ -76,7 +76,7 @@ function prepareData(array $docs): array
     return $idf;
 }
 
-function getTermFrequency(array $terms, $word): float
+function getTermFrequency(array $terms, string $word): float
 {
     $occurrencesNumber = count(array_filter($terms, fn (string $term) => $term === $word));
     $termsCount = count($terms);
