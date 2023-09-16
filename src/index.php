@@ -57,7 +57,7 @@ function prepareData(array $docs): array
     $idf = array_map(
         fn (array $docsWithWord): array => [
             'docs' => $docsWithWord,
-            'idf' => count($docsWithWord) === 0 ? 0 : log(count($docs) / count($docsWithWord)),
+            'idf' => count($docsWithWord) === 0 ? 0 : count($docsWithWord) / count($docs),
         ],
         $invertedIndex
     );
