@@ -73,7 +73,7 @@ function prepareData(array $docs): array
         $idf
     );
 
-    return $idf;
+    return $tfidf;
 }
 
 function getTermFrequency(array $terms, string $word): float
@@ -116,20 +116,12 @@ function tokenize(string $text): array
 
 function sortByRelevance(array $docs): array
 {
-    $tfidf = array_map(
-        fn (array $extdoc) =>
-        array_reduce(
-            $extdoc['docs'],
-            fn (array $accum, array $doc) => [...$accum, ...[$doc['id'] => $extdoc['idf'] * $doc['tf']]],
-            []
-        ),
-        $docs
-    );
+    $docs = array_column($docs, 'docs');
 
-    $totaltfidf  = array_reduce(
-        $tfidf,
-        function (array $accum, array $docs) {
-            foreach ($docs as $id => $tfidf) {
+    $totaltfidf = array_reduce(
+        $docs,
+        function (array $accum, array $doc) {
+            foreach ($doc as ['id' => $id, 'tfidf' => $tfidf]) {
                 if (array_key_exists($id, $accum)) {
                     $accum[$id] += $tfidf;
                 } else {
