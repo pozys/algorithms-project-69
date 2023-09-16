@@ -106,7 +106,7 @@ function getTerm(string $token): string
     $matches = [];
     preg_match_all('/\w+/', $token, $matches);
 
-    return $matches[0][0] ?? '';
+    return strtolower($matches[0][0] ?? '');
 }
 
 function tokenize(string $text): array
