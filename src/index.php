@@ -96,7 +96,10 @@ function searchForWords(array $docs, array $words): array
 {
     return array_reduce(
         $words,
-        fn (array $accum, string $word) => [...$accum, [...$docs[$word]]],
+        fn (array $accum, string $word) =>
+        array_key_exists($word, $docs)
+            ? [...$accum, [...$docs[$word]]]
+            : $accum,
         []
     );
 }
